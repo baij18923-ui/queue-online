@@ -1,0 +1,10 @@
+{
+  "name": "queue-online",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 5173",
+    "check": "node --check src/config.js && node --check src/supabaseClient.js && node --check src/queueStore.js && node --check src/user.js && node --check src/admin.js"
+  }
+}

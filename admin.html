@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>取号叫号 - 管理端</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body data-page="admin">
+    <main class="admin-shell">
+      <section class="admin-header">
+        <div>
+          <p class="eyebrow">Admin Console</p>
+          <h1>叫号管理端</h1>
+        </div>
+        <a class="admin-link" href="/">用户端</a>
+      </section>
+
+      <section class="login-card" id="loginCard">
+        <h2>管理员登录</h2>
+        <p>默认密码：123456，上线前可在代码配置里修改。</p>
+        <label for="passwordInput">管理密码</label>
+        <input id="passwordInput" type="password" placeholder="请输入管理密码" />
+        <button id="loginButton">登录</button>
+        <p class="form-error" id="loginError"></p>
+      </section>
+
+      <div class="admin-grid" id="adminApp" hidden>
+        <section class="control-panel">
+          <div class="section-title">
+            <h2>当前状态</h2>
+            <span id="adminStatus">开放</span>
+          </div>
+
+          <div class="admin-current">
+            <span>当前叫号</span>
+            <strong id="adminCurrentCall">-</strong>
+          </div>
+
+          <div class="action-grid">
+            <button class="primary-action" id="callNext">叫下一个</button>
+            <button id="recallCurrent">重叫当前</button>
+            <button class="muted-button" id="toggleService">暂停取号</button>
+            <button class="danger-button" id="clearWaiting">清空等待</button>
+          </div>
+
+          <div class="settings-box">
+            <h2>号码设置</h2>
+            <div class="form-grid">
+              <label>
+                号码前缀
+                <input id="prefixInput" type="text" maxlength="6" />
+              </label>
+              <label>
+                号码位数
+                <input id="digitsInput" type="number" min="1" max="6" />
+              </label>
+              <label>
+                下一个号码
+                <input id="nextNumberInput" type="number" min="1" />
+              </label>
+              <label class="full-field">
+                叫号提示文本，使用 {number} 代表当前号码
+                <input id="callTextInput" type="text" placeholder="请 {number} 到窗口办理" />
+              </label>
+            </div>
+            <button id="saveSettings">保存设置</button>
+          </div>
+
+          <button class="danger-ghost" id="resetAll">全部重置</button>
+        </section>
+
+        <section class="queue-panel">
+          <div class="section-title">
+            <h2>等待队列</h2>
+            <span id="adminWaitingCount">0 人</span>
+          </div>
+          <div class="admin-queue" id="adminQueue"></div>
+        </section>
+
+        <section class="history-panel">
+          <div class="section-title">
+            <h2>操作记录</h2>
+            <button class="small-button" id="exportHistory">导出 JSON</button>
+          </div>
+          <div class="history-list" id="historyList"></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/src/admin.js"></script>
+  </body>
+</html>
