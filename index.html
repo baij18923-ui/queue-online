@@ -1,68 +1,35 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>取号叫号 - 用户端</title>
-    <link rel="stylesheet" href="/src/styles.css" />
-  </head>
-  <body data-page="user">
-    <main class="user-shell">
-      <section class="hero-board">
-        <div class="brand-row">
-          <div>
-            <p class="eyebrow">Queue System</p>
-            <h1>取号叫号</h1>
-          </div>
-          <a class="admin-link" href="/admin.html">管理端</a>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meteor Design Queue | 流星设计排队系统</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <h1>设计师工作量看板</h1>
+      </div>
+      <div class="hero-total">
+        <div>
+          <strong id="activeTotal">0</strong>
+          <span>当前总设计数量</span>
         </div>
+      </div>
+    </section>
 
-        <div class="now-calling-card">
-          <span>当前叫号</span>
-          <strong id="currentCall">等待叫号</strong>
-          <p id="callHint">请留意工作人员叫号</p>
-        </div>
+    <section class="grid-2 cards" id="designerCards">
+      <div class="loading">正在加载设计师工作量...</div>
+    </section>
+  </main>
 
-        <div class="queue-strip">
-          <div>
-            <span>等待人数</span>
-            <strong id="waitingCount">0</strong>
-          </div>
-          <div>
-            <span>最新取号</span>
-            <strong id="lastTicket">-</strong>
-          </div>
-          <div>
-            <span>营业状态</span>
-            <strong id="serviceStatus">开放</strong>
-          </div>
-        </div>
-      </section>
+  <div id="toast" class="toast"></div>
 
-      <section class="ticket-panel">
-        <div class="panel-heading">
-          <h2>自助取号</h2>
-          <p>取号后请等待屏幕显示您的号码</p>
-        </div>
-
-        <button class="primary-action" id="takeTicket">立即取号</button>
-
-        <div class="my-ticket" id="myTicketBox" hidden>
-          <span>您的号码</span>
-          <strong id="myTicket">-</strong>
-          <p id="myPosition">正在计算等待人数</p>
-        </div>
-
-        <div class="waiting-list-card">
-          <div class="section-title">
-            <h2>等待号码</h2>
-            <span id="visibleWaitingCount">0 个</span>
-          </div>
-          <div class="waiting-grid" id="waitingNumbers"></div>
-        </div>
-      </section>
-    </main>
-
-    <script type="module" src="/src/user.js"></script>
-  </body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./src/config.js"></script>
+  <script src="./src/app.js"></script>
+  <script>window.MeteorApp.startUser();</script>
+</body>
 </html>

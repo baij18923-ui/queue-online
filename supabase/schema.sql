@@ -1,220 +1,382 @@
+
+-- Meteor Design Queue V2
+-- 流星设计排队系统：设计师工作量、取号、叫号、完成、暂停接单
+
 create extension if not exists pgcrypto;
 
-create table if not exists public.queue_settings (
+create table if not exists public.meteor_settings (
   id integer primary key default 1 check (id = 1),
-  prefix text not null default 'A',
-  digits integer not null default 3 check (digits between 1 and 6),
+  current_day text not null default to_char(now(), 'YYYY-MM-DD'),
   next_number integer not null default 1 check (next_number >= 1),
-  call_text text not null default '请 {number} 到窗口办理',
-  is_open boolean not null default true,
-  current_call_id uuid,
-  last_ticket_id uuid,
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.queue_tickets (
-  id uuid primary key default gen_random_uuid(),
-  number text not null,
-  status text not null default 'waiting' check (status in ('waiting', 'called', 'skipped')),
+create table if not exists public.meteor_designers (
+  id text primary key,
+  name text not null,
+  sort_order integer not null default 0,
+  is_accepting boolean not null default true,
   created_at timestamptz not null default now(),
-  called_at timestamptz,
-  skipped_at timestamptz
+  updated_at timestamptz not null default now()
 );
 
-create table if not exists public.queue_logs (
+create table if not exists public.meteor_design_tickets (
+  id uuid primary key default gen_random_uuid(),
+  number text not null,
+  number_seq integer not null,
+  designer_id text not null references public.meteor_designers(id),
+  status text not null default 'waiting' check (status in ('waiting', 'in_progress', 'done', 'cancelled')),
+  date_key text not null,
+  month_key text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  called_at timestamptz,
+  finished_at timestamptz,
+  cancelled_at timestamptz
+);
+
+create table if not exists public.meteor_logs (
   id uuid primary key default gen_random_uuid(),
   action text not null,
   detail text,
   created_at timestamptz not null default now()
 );
 
-insert into public.queue_settings (id)
+insert into public.meteor_settings (id)
 values (1)
 on conflict (id) do nothing;
 
-create or replace function public.take_queue_ticket()
-returns public.queue_tickets
+insert into public.meteor_designers (id, name, sort_order, is_accepting)
+values
+  ('designer_a', '设计A', 1, true),
+  ('designer_b', '设计B', 2, true)
+on conflict (id) do update
+set sort_order = excluded.sort_order,
+    updated_at = now();
+
+create or replace function public.meteor_today_key()
+returns text
+language sql
+stable
+as $$
+  select to_char(now(), 'YYYY-MM-DD');
+$$;
+
+create or replace function public.meteor_month_key()
+returns text
+language sql
+stable
+as $$
+  select to_char(now(), 'YYYY-MM');
+$$;
+
+create or replace function public.meteor_take_ticket(p_designer_id text)
+returns public.meteor_design_tickets
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  cfg public.queue_settings%rowtype;
-  ticket public.queue_tickets%rowtype;
+  cfg public.meteor_settings%rowtype;
+  d public.meteor_designers%rowtype;
+  t public.meteor_design_tickets%rowtype;
+  today text := public.meteor_today_key();
+  month text := public.meteor_month_key();
   ticket_number text;
 begin
-  select *
-  into cfg
-  from public.queue_settings
+  select * into cfg
+  from public.meteor_settings
   where id = 1
   for update;
 
-  if not cfg.is_open then
-    raise exception '当前暂停取号，请稍后再试。';
+  if cfg.current_day <> today then
+    update public.meteor_settings
+    set current_day = today,
+        next_number = 1,
+        updated_at = now()
+    where id = 1
+    returning * into cfg;
   end if;
 
-  ticket_number := cfg.prefix || lpad(cfg.next_number::text, cfg.digits, '0');
+  select * into d
+  from public.meteor_designers
+  where id = p_designer_id;
 
-  insert into public.queue_tickets (number, status)
-  values (ticket_number, 'waiting')
-  returning * into ticket;
+  if d.id is null then
+    raise exception '设计师不存在。';
+  end if;
 
-  update public.queue_settings
+  if d.is_accepting is not true then
+    raise exception '% 当前暂停接单，请选择其他设计师。', d.name;
+  end if;
+
+  ticket_number := lpad(cfg.next_number::text, 2, '0') || '号';
+
+  insert into public.meteor_design_tickets (
+    number, number_seq, designer_id, status, date_key, month_key
+  )
+  values (
+    ticket_number, cfg.next_number, d.id, 'waiting', today, month
+  )
+  returning * into t;
+
+  update public.meteor_settings
   set next_number = cfg.next_number + 1,
-      last_ticket_id = ticket.id,
       updated_at = now()
   where id = 1;
 
-  insert into public.queue_logs (action, detail)
-  values ('取号', ticket.number);
+  insert into public.meteor_logs (action, detail)
+  values ('取号', ticket_number || ' - ' || d.name);
 
-  return ticket;
+  return t;
 end;
 $$;
 
-create or replace function public.call_queue_ticket(ticket_id uuid)
-returns public.queue_tickets
+create or replace function public.meteor_call_next_ticket(p_designer_id text)
+returns public.meteor_design_tickets
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  ticket public.queue_tickets%rowtype;
+  t public.meteor_design_tickets%rowtype;
 begin
-  update public.queue_tickets
-  set status = 'called',
-      called_at = now()
-  where id = ticket_id
-  returning * into ticket;
+  select * into t
+  from public.meteor_design_tickets
+  where designer_id = p_designer_id
+    and date_key = public.meteor_today_key()
+    and status = 'waiting'
+  order by created_at asc
+  limit 1
+  for update;
 
-  if ticket.id is null then
-    raise exception '找不到该号码。';
+  if t.id is null then
+    raise exception '该设计师暂无等待号码。';
   end if;
 
-  update public.queue_settings
-  set current_call_id = ticket.id,
+  update public.meteor_design_tickets
+  set status = 'in_progress',
+      called_at = now(),
       updated_at = now()
-  where id = 1;
+  where id = t.id
+  returning * into t;
 
-  insert into public.queue_logs (action, detail)
-  values ('叫号', ticket.number);
+  insert into public.meteor_logs (action, detail)
+  values ('叫号', t.number || ' - ' || t.designer_id);
 
-  return ticket;
+  return t;
 end;
 $$;
 
-create or replace function public.skip_queue_ticket(ticket_id uuid)
-returns public.queue_tickets
+create or replace function public.meteor_update_ticket_status(p_ticket_id uuid, p_status text)
+returns public.meteor_design_tickets
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  ticket public.queue_tickets%rowtype;
+  t public.meteor_design_tickets%rowtype;
 begin
-  update public.queue_tickets
-  set status = 'skipped',
-      skipped_at = now()
-  where id = ticket_id
-  returning * into ticket;
+  if p_status not in ('waiting', 'in_progress', 'done', 'cancelled') then
+    raise exception '状态不正确。';
+  end if;
 
-  if ticket.id is null then
+  update public.meteor_design_tickets
+  set status = p_status,
+      called_at = case when p_status = 'in_progress' then coalesce(called_at, now()) else called_at end,
+      finished_at = case when p_status = 'done' then now() else finished_at end,
+      cancelled_at = case when p_status = 'cancelled' then now() else cancelled_at end,
+      updated_at = now()
+  where id = p_ticket_id
+  returning * into t;
+
+  if t.id is null then
     raise exception '找不到该号码。';
   end if;
 
-  insert into public.queue_logs (action, detail)
-  values ('跳过', ticket.number);
+  insert into public.meteor_logs (action, detail)
+  values ('修改状态', t.number || ' - ' || p_status);
 
-  return ticket;
+  return t;
 end;
 $$;
 
-create or replace function public.clear_waiting_queue()
+create or replace function public.meteor_transfer_ticket(p_ticket_id uuid, p_designer_id text)
+returns public.meteor_design_tickets
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  t public.meteor_design_tickets%rowtype;
+  d public.meteor_designers%rowtype;
+begin
+  select * into d
+  from public.meteor_designers
+  where id = p_designer_id;
+
+  if d.id is null then
+    raise exception '设计师不存在。';
+  end if;
+
+  update public.meteor_design_tickets
+  set designer_id = d.id,
+      updated_at = now()
+  where id = p_ticket_id
+  returning * into t;
+
+  if t.id is null then
+    raise exception '找不到该号码。';
+  end if;
+
+  insert into public.meteor_logs (action, detail)
+  values ('转单', t.number || ' 转给 ' || d.name);
+
+  return t;
+end;
+$$;
+
+create or replace function public.meteor_set_designer_accepting(p_designer_id text, p_is_accepting boolean)
+returns public.meteor_designers
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  d public.meteor_designers%rowtype;
+begin
+  update public.meteor_designers
+  set is_accepting = p_is_accepting,
+      updated_at = now()
+  where id = p_designer_id
+  returning * into d;
+
+  if d.id is null then
+    raise exception '设计师不存在。';
+  end if;
+
+  insert into public.meteor_logs (action, detail)
+  values (case when p_is_accepting then '恢复接单' else '暂停接单' end, d.name);
+
+  return d;
+end;
+$$;
+
+create or replace function public.meteor_update_designer_names(p_name_a text, p_name_b text)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
-declare
-  skipped_count integer;
 begin
-  update public.queue_tickets
-  set status = 'skipped',
-      skipped_at = now()
-  where status = 'waiting';
+  update public.meteor_designers
+  set name = coalesce(nullif(trim(p_name_a), ''), '设计A'),
+      updated_at = now()
+  where id = 'designer_a';
 
-  get diagnostics skipped_count = row_count;
+  update public.meteor_designers
+  set name = coalesce(nullif(trim(p_name_b), ''), '设计B'),
+      updated_at = now()
+  where id = 'designer_b';
 
-  insert into public.queue_logs (action, detail)
-  values ('清空等待', skipped_count || ' 个号码');
+  insert into public.meteor_logs (action, detail)
+  values ('修改设计师名称', p_name_a || ', ' || p_name_b);
 end;
 $$;
 
-create or replace function public.reset_queue_system()
+create or replace function public.meteor_reset_today_number()
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  truncate table public.queue_tickets restart identity;
-  truncate table public.queue_logs restart identity;
-
-  update public.queue_settings
-  set prefix = 'A',
-      digits = 3,
+  update public.meteor_settings
+  set current_day = public.meteor_today_key(),
       next_number = 1,
-      call_text = '请 {number} 到窗口办理',
-      is_open = true,
-      current_call_id = null,
-      last_ticket_id = null,
       updated_at = now()
   where id = 1;
 
-  insert into public.queue_logs (action, detail)
-  values ('全部重置', '系统已重置');
+  insert into public.meteor_logs (action, detail)
+  values ('重置今日号码', public.meteor_today_key());
 end;
 $$;
 
-alter table public.queue_settings enable row level security;
-alter table public.queue_tickets enable row level security;
-alter table public.queue_logs enable row level security;
+create or replace function public.meteor_clear_today_data()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.meteor_design_tickets
+  where date_key = public.meteor_today_key();
 
-drop policy if exists "queue_settings_public_access" on public.queue_settings;
-drop policy if exists "queue_tickets_public_access" on public.queue_tickets;
-drop policy if exists "queue_logs_public_access" on public.queue_logs;
+  update public.meteor_settings
+  set current_day = public.meteor_today_key(),
+      next_number = 1,
+      updated_at = now()
+  where id = 1;
 
-create policy "queue_settings_public_access"
-on public.queue_settings
+  insert into public.meteor_logs (action, detail)
+  values ('清空今日测试数据', public.meteor_today_key());
+end;
+$$;
+
+alter table public.meteor_settings enable row level security;
+alter table public.meteor_designers enable row level security;
+alter table public.meteor_design_tickets enable row level security;
+alter table public.meteor_logs enable row level security;
+
+drop policy if exists "meteor_settings_public_access" on public.meteor_settings;
+drop policy if exists "meteor_designers_public_access" on public.meteor_designers;
+drop policy if exists "meteor_design_tickets_public_access" on public.meteor_design_tickets;
+drop policy if exists "meteor_logs_public_access" on public.meteor_logs;
+
+create policy "meteor_settings_public_access"
+on public.meteor_settings
 for all
 using (true)
 with check (true);
 
-create policy "queue_tickets_public_access"
-on public.queue_tickets
+create policy "meteor_designers_public_access"
+on public.meteor_designers
 for all
 using (true)
 with check (true);
 
-create policy "queue_logs_public_access"
-on public.queue_logs
+create policy "meteor_design_tickets_public_access"
+on public.meteor_design_tickets
+for all
+using (true)
+with check (true);
+
+create policy "meteor_logs_public_access"
+on public.meteor_logs
 for all
 using (true)
 with check (true);
 
 grant usage on schema public to anon;
-grant select, insert, update, delete on public.queue_settings to anon;
-grant select, insert, update, delete on public.queue_tickets to anon;
-grant select, insert, update, delete on public.queue_logs to anon;
-grant execute on function public.take_queue_ticket() to anon;
-grant execute on function public.call_queue_ticket(uuid) to anon;
-grant execute on function public.skip_queue_ticket(uuid) to anon;
-grant execute on function public.clear_waiting_queue() to anon;
-grant execute on function public.reset_queue_system() to anon;
+grant select, insert, update, delete on public.meteor_settings to anon;
+grant select, insert, update, delete on public.meteor_designers to anon;
+grant select, insert, update, delete on public.meteor_design_tickets to anon;
+grant select, insert, update, delete on public.meteor_logs to anon;
+
+grant execute on function public.meteor_today_key() to anon;
+grant execute on function public.meteor_month_key() to anon;
+grant execute on function public.meteor_take_ticket(text) to anon;
+grant execute on function public.meteor_call_next_ticket(text) to anon;
+grant execute on function public.meteor_update_ticket_status(uuid, text) to anon;
+grant execute on function public.meteor_transfer_ticket(uuid, text) to anon;
+grant execute on function public.meteor_set_designer_accepting(text, boolean) to anon;
+grant execute on function public.meteor_update_designer_names(text, text) to anon;
+grant execute on function public.meteor_reset_today_number() to anon;
+grant execute on function public.meteor_clear_today_data() to anon;
 
 do $$
 begin
-  alter publication supabase_realtime add table public.queue_settings;
+  alter publication supabase_realtime add table public.meteor_designers;
 exception
   when duplicate_object then null;
 end;
@@ -222,15 +384,7 @@ $$;
 
 do $$
 begin
-  alter publication supabase_realtime add table public.queue_tickets;
-exception
-  when duplicate_object then null;
-end;
-$$;
-
-do $$
-begin
-  alter publication supabase_realtime add table public.queue_logs;
+  alter publication supabase_realtime add table public.meteor_design_tickets;
 exception
   when duplicate_object then null;
 end;

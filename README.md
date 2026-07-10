@@ -1,49 +1,25 @@
-# 在线取号叫号系统
+# Meteor Design Queue
 
-这个版本把展示屏合并到了用户端：
+流星设计排队系统 V2 在线版。
 
-- 用户端 `/`：取号、显示当前叫号、等待人数、等待号码。
-- 管理端 `/admin.html`：登录后叫号、重叫、跳过、暂停取号、清空队列、重置和导出记录。
-- 管理端短路径 `/admin`：通过 `vercel.json` 重写到 `/admin.html`。
-- 管理端可以自定义叫号提示文本，例如 `请 {number} 到窗口办理`。
-- Supabase 提供在线数据库和 Realtime 实时同步。
-- 未配置 Supabase 时，项目会启用浏览器本地测试数据源，方便先验证闭环；填入 Supabase 配置后会自动使用线上数据库。
+## 页面
 
-## 本地运行
+- 用户端：`/`
+- 管理端：`/admin.html`
 
-```bash
-python -m http.server 5173
-```
+## 主要功能
 
-打开：
+- 用户端显示设计师当前待处理数量。
+- 用户端选择设计师取号。
+- 后台可以叫下一个、完成、作废、改回等待、转单。
+- 后台新增暂停接单 / 恢复接单。
+- 暂停接单后，用户端显示暂停接单，并禁用该设计师取号按钮。
+- 本月接单只在后台显示。
+- Supabase 实时同步。
 
-- 用户端：`http://localhost:5173/`
-- 管理端：`http://localhost:5173/admin.html`
-- 管理端短路径：`http://localhost:5173/admin`
+## 部署
 
-管理端默认密码：`123456`
-
-## Supabase 配置
-
-1. 创建 Supabase 免费项目。
-2. 打开 SQL Editor。
-3. 执行 `supabase/schema.sql`。
-4. 打开 `src/config.js`。
-5. 填入 `SUPABASE_URL` 和 `SUPABASE_ANON_KEY`。
-
-```js
-export const SUPABASE_URL = "https://你的项目.supabase.co";
-export const SUPABASE_ANON_KEY = "你的 anon public key";
-```
-
-管理端密码也在 `src/config.js`：
-
-```js
-export const ADMIN_PASSWORD = "123456";
-```
-
-## 免费部署
-
-这是无构建静态网站，可以直接部署到 Vercel。
-
-详细部署步骤见 `DEPLOY.md`。如果要交给另一个有浏览器和 GitHub 权限的 Codex 部署，可以把 `CODEX_DEPLOY_PROMPT.md` 的内容发给它。
+1. 在 Supabase SQL Editor 运行 `supabase/schema.sql`。
+2. 检查 `src/config.js` 里的 Supabase URL 和 Publishable key。
+3. 上传本项目所有文件到当前 GitHub 仓库根目录。
+4. Netlify 会自动覆盖部署，原网址不变。

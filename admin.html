@@ -1,93 +1,67 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>取号叫号 - 管理端</title>
-    <link rel="stylesheet" href="/src/styles.css" />
-  </head>
-  <body data-page="admin">
-    <main class="admin-shell">
-      <section class="admin-header">
-        <div>
-          <p class="eyebrow">Admin Console</p>
-          <h1>叫号管理端</h1>
-        </div>
-        <a class="admin-link" href="/">用户端</a>
-      </section>
-
-      <section class="login-card" id="loginCard">
-        <h2>管理员登录</h2>
-        <p>默认密码：123456，上线前可在代码配置里修改。</p>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理端 | Meteor Design Queue</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <main class="page">
+    <section id="loginBox" class="card login-card">
+      <h1 style="margin:0 0 8px">管理端登录</h1>
+      <p class="desc">密码输入框隐藏显示，不会明文展示。</p>
+      <div class="input-row">
         <label for="passwordInput">管理密码</label>
-        <input id="passwordInput" type="password" placeholder="请输入管理密码" />
-        <button id="loginButton">登录</button>
-        <p class="form-error" id="loginError"></p>
+        <input id="passwordInput" type="password" autocomplete="current-password" placeholder="请输入管理密码" />
+      </div>
+      <button class="btn-main" style="width:100%; margin-top:16px" id="loginBtn">登录</button>
+      <p id="loginMsg" class="small"></p>
+    </section>
+
+    <section id="adminPanel" style="display:none">
+      <div class="admin-top">
+        <div>
+          <h1 style="margin:0 0 8px">设计叫号管理</h1>
+          <p class="desc">每个设计师可独立叫号、完成、作废、暂停接单或恢复接单。</p>
+        </div>
+        <div class="admin-actions">
+          <button class="btn-muted" id="refreshBtn">刷新</button>
+          <button class="btn-warn" id="resetNumberBtn">重置今日号码</button>
+          <button class="btn-danger" id="clearTodayBtn">清空今日测试数据</button>
+          <button class="btn-muted" id="logoutBtn">退出</button>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="admin-stat-grid" id="adminStats"></div>
       </section>
 
-      <div class="admin-grid" id="adminApp" hidden>
-        <section class="control-panel">
-          <div class="section-title">
-            <h2>当前状态</h2>
-            <span id="adminStatus">开放</span>
-          </div>
+      <section class="card" style="margin-top:16px">
+        <h2 style="margin:0 0 6px">设计师名称设置</h2>
+        <p class="desc">测试或正式使用时可改成真实设计师姓名。</p>
+        <div class="grid-2" style="margin-top:14px">
+          <div class="input-row" style="margin:0"><label>设计师 1</label><input id="designerNameA" /></div>
+          <div class="input-row" style="margin:0"><label>设计师 2</label><input id="designerNameB" /></div>
+        </div>
+        <button class="btn-main" style="margin-top:14px" id="saveNamesBtn">保存名称</button>
+      </section>
 
-          <div class="admin-current">
-            <span>当前叫号</span>
-            <strong id="adminCurrentCall">-</strong>
-          </div>
+      <section id="adminDesignerPanels"></section>
 
-          <div class="action-grid">
-            <button class="primary-action" id="callNext">叫下一个</button>
-            <button id="recallCurrent">重叫当前</button>
-            <button class="muted-button" id="toggleService">暂停取号</button>
-            <button class="danger-button" id="clearWaiting">清空等待</button>
-          </div>
+      <section class="card" style="margin-top:16px">
+        <h2 style="margin:0 0 8px">本月统计</h2>
+        <p class="desc">本月接单只在后台显示。新月份会自动重新计算，不删除历史。</p>
+        <div id="monthStats" style="margin-top:14px"></div>
+      </section>
+    </section>
+  </main>
 
-          <div class="settings-box">
-            <h2>号码设置</h2>
-            <div class="form-grid">
-              <label>
-                号码前缀
-                <input id="prefixInput" type="text" maxlength="6" />
-              </label>
-              <label>
-                号码位数
-                <input id="digitsInput" type="number" min="1" max="6" />
-              </label>
-              <label>
-                下一个号码
-                <input id="nextNumberInput" type="number" min="1" />
-              </label>
-              <label class="full-field">
-                叫号提示文本，使用 {number} 代表当前号码
-                <input id="callTextInput" type="text" placeholder="请 {number} 到窗口办理" />
-              </label>
-            </div>
-            <button id="saveSettings">保存设置</button>
-          </div>
+  <div id="toast" class="toast"></div>
 
-          <button class="danger-ghost" id="resetAll">全部重置</button>
-        </section>
-
-        <section class="queue-panel">
-          <div class="section-title">
-            <h2>等待队列</h2>
-            <span id="adminWaitingCount">0 人</span>
-          </div>
-          <div class="admin-queue" id="adminQueue"></div>
-        </section>
-
-        <section class="history-panel">
-          <div class="section-title">
-            <h2>操作记录</h2>
-            <button class="small-button" id="exportHistory">导出 JSON</button>
-          </div>
-          <div class="history-list" id="historyList"></div>
-        </section>
-      </div>
-    </main>
-
-    <script type="module" src="/src/admin.js"></script>
-  </body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./src/config.js"></script>
+  <script src="./src/app.js"></script>
+  <script>window.MeteorApp.startAdmin();</script>
+</body>
 </html>
