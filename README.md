@@ -39,3 +39,8 @@
 2. 检查 `src/config.js` 里的 Supabase URL 和 Publishable key。
 3. 上传本项目所有文件到当前 GitHub 仓库根目录。
 4. Netlify 会自动覆盖部署，原网址不变。
+
+
+## 新增
+
+- 用户端新增“设计流程”说明区，内容来自你提供的流程图。
