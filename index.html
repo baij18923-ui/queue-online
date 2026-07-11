@@ -24,127 +24,119 @@
       <div class="loading">正在加载设计师工作量...</div>
     </section>
 
-    <section class="card flow-section">
-      <div class="flow-header">
-        <div>
-          <h2>设计流程</h2>
-          <p>以下流程供业务在提交需求前查看，便于选择合适的沟通方式和资料准备内容。</p>
+    <section class="card flow-mini-section">
+      <div class="flow-mini-header">
+        <h2>设计流程</h2>
+        <p>按不同设计需求查看需要准备的资料和确认步骤。</p>
+      </div>
+
+      <div class="flow-mini-scroll">
+        <div class="flow-mini-map">
+          <div class="flow-mini-root">设计流程</div>
+
+          <div class="flow-mini-lines">
+            <article class="flow-mini-item">
+              <div class="flow-mini-title">做3D</div>
+              <div class="flow-mini-row">
+                <span>提供：客户名、尺寸、盒型</span>
+                <i></i>
+                <span>等待设计交付</span>
+              </div>
+            </article>
+
+            <article class="flow-mini-item">
+              <div class="flow-mini-title">做设计平面图</div>
+              <div class="flow-mini-row">
+                <span>提供：客户名、尺寸、盒型、客户要求</span>
+                <i></i>
+                <span>等待设计交付平面图</span>
+                <i></i>
+                <span>客户确认平面图</span>
+                <i></i>
+                <span>设计制作终版文件（打样）</span>
+              </div>
+            </article>
+
+            <article class="flow-mini-item">
+              <div class="flow-mini-title">客户有详细文件和设计</div>
+              <div class="flow-mini-branches">
+                <div class="flow-mini-branch">
+                  <strong>客户要修改设计</strong>
+                  <div class="flow-mini-row">
+                    <span>提供：客户名、客户要求</span>
+                    <i></i>
+                    <span>等待设计交付平面图</span>
+                    <i></i>
+                    <span>客户确认平面图</span>
+                    <i></i>
+                    <span>设计制作终版文件（打样）</span>
+                  </div>
+                </div>
+                <div class="flow-mini-branch">
+                  <strong>客户不要修改，直接做样品</strong>
+                  <div class="flow-mini-row">
+                    <span>提供：客户名、客户文件</span>
+                    <i></i>
+                    <span>等待设计交付终版平面图</span>
+                    <i></i>
+                    <span>客户确认平面图</span>
+                    <i></i>
+                    <span>设计制作终版文件（打样）</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="flow-mini-item">
+              <div class="flow-mini-title">客户要 PDF 文件确认设计详情</div>
+              <div class="flow-mini-row">
+                <span>设计出平面图</span>
+                <i></i>
+                <span>客户确认</span>
+                <i></i>
+                <span>设计出待确定 PDF</span>
+              </div>
+              <div class="flow-mini-branches two">
+                <div class="flow-mini-branch">
+                  <strong>客户确认 PDF 设计</strong>
+                  <div class="flow-mini-row"><span>设计出终版文件（打样）</span></div>
+                </div>
+                <div class="flow-mini-branch">
+                  <strong>要修改</strong>
+                  <div class="flow-mini-row">
+                    <span>设计出平面图</span>
+                    <i></i>
+                    <span>客户确认</span>
+                    <i></i>
+                    <span>设计出终版文件（打样）</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="flow-mini-item">
+              <div class="flow-mini-title">客户在假期需要 PDF 文件确定</div>
+              <div class="flow-mini-row">
+                <span>在工作日和设计说明情况下，方便设计保存文件</span>
+                <i></i>
+                <span>设计出平面图</span>
+              </div>
+              <div class="flow-mini-branches two">
+                <div class="flow-mini-branch">
+                  <strong>客户确认</strong>
+                  <div class="flow-mini-row"><span>设计出终版文件（打样）</span></div>
+                </div>
+                <div class="flow-mini-branch">
+                  <strong>客户要 PDF 确认</strong>
+                  <div class="flow-mini-row"><span>参考第四条流程</span></div>
+                </div>
+              </div>
+            </article>
+          </div>
         </div>
       </div>
-
-      <div class="flow-list">
-        <article class="flow-item">
-          <div class="flow-title">做3D</div>
-          <div class="flow-row">
-            <span class="flow-step">提供：客户名、尺寸、盒型</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">等待设计交付</span>
-          </div>
-        </article>
-
-        <article class="flow-item">
-          <div class="flow-title">做设计平面图</div>
-          <div class="flow-row">
-            <span class="flow-step">提供：客户名、尺寸、盒型、客户要求</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">等待设计交付平面图</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">客户确认平面图</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">设计制作终版文件（打样）</span>
-          </div>
-        </article>
-
-        <article class="flow-item">
-          <div class="flow-title">客户有详细文件和设计</div>
-          <div class="flow-branch">
-            <div class="branch-label">客户要修改设计</div>
-            <div class="flow-row">
-              <span class="flow-step">提供：客户名、客户要求</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-step">等待设计交付平面图</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-step">客户确认平面图</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-step">设计制作终版文件（打样）</span>
-            </div>
-          </div>
-          <div class="flow-branch">
-            <div class="branch-label">客户不要修改，直接做样品</div>
-            <div class="flow-row">
-              <span class="flow-step">提供：客户名、客户文件</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-step">等待设计交付终版平面图</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-step">客户确认平面图</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-step">设计制作终版文件（打样）</span>
-            </div>
-          </div>
-        </article>
-
-        <article class="flow-item">
-          <div class="flow-title">客户要 PDF 文件确认设计详情</div>
-          <div class="flow-row">
-            <span class="flow-step">设计出平面图</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">客户确认</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">设计出待确定 PDF</span>
-          </div>
-          <div class="flow-branch-grid">
-            <div class="flow-branch compact">
-              <div class="branch-label">客户确认 PDF 设计</div>
-              <div class="flow-row">
-                <span class="flow-step">设计出终版文件（打样）</span>
-              </div>
-            </div>
-            <div class="flow-branch compact">
-              <div class="branch-label">要修改</div>
-              <div class="flow-row">
-                <span class="flow-step">设计出平面图</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-step">客户确认</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-step">设计出终版文件（打样）</span>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="flow-item">
-          <div class="flow-title">客户在假期需要 PDF 文件确定</div>
-          <div class="flow-row">
-            <span class="flow-step">在工作日和设计说明情况下，方便设计保存文件</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">设计出平面图</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">客户确认</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step">设计出待确定 PDF</span>
-          </div>
-          <div class="flow-branch-grid">
-            <div class="flow-branch compact">
-              <div class="branch-label">客户确认</div>
-              <div class="flow-row">
-                <span class="flow-step">设计出终版文件（打样）</span>
-              </div>
-            </div>
-            <div class="flow-branch compact">
-              <div class="branch-label">要修改</div>
-              <div class="flow-row">
-                <span class="flow-step">设计出平面图</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-step">客户确认</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-step">设计出终版文件（打样）</span>
-              </div>
-            </div>
-          </div>
-        </article>
-      </div>
     </section>
-  </main>
+</main>
 
   <div id="toast" class="toast"></div>
 
