@@ -3,70 +3,106 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>管理端 | Meteor Design Queue</title>
+  <title>Meteor Design Queue | 用户端</title>
   <link rel="stylesheet" href="./src/styles.css" />
 </head>
-<body>
+<body data-page="user">
   <main class="page">
-    <section id="loginBox" class="card login-card">
-      <h1 style="margin:0 0 8px">管理端登录</h1>
-      <p class="desc">密码输入框隐藏显示，不会明文展示。</p>
-      <div class="input-row">
-        <label for="passwordInput">管理密码</label>
-        <input id="passwordInput" type="password" autocomplete="current-password" placeholder="请输入管理密码" />
+    <section class="hero">
+      <div>
+        <h1>设计师工作量看板</h1>
       </div>
-      <button class="btn-main" style="width:100%; margin-top:16px" id="loginBtn">登录</button>
-      <p id="loginMsg" class="small"></p>
-    </section>
-
-    <section id="adminPanel" style="display:none">
-      <div class="admin-top">
+      <div class="hero-total">
         <div>
-          <h1 style="margin:0 0 8px">设计叫号管理</h1>
-          <p class="desc">每个设计师可独立叫号、完成、作废、暂停接单或恢复接单。</p>
+          <strong id="activeTotal">0</strong>
+          <span>当前总设计数量</span>
         </div>
-        <div class="admin-actions">
-          <button class="btn-muted" id="refreshBtn">刷新</button>
-          <button class="btn-warn" id="resetNumberBtn">重置今日号码</button>
-          <button class="btn-danger" id="clearTodayBtn">清空今日测试数据</button>
-          <button class="btn-muted" id="logoutBtn">退出</button>
+      </div>
+    </section>
+
+    <section class="grid-2 cards" id="designerCards">
+      <div class="loading">正在加载设计师工作量...</div>
+    </section>
+
+    <section class="card flow-clean-section">
+      <div class="flow-clean-header">
+        <div>
+          <h2>设计流程</h2>
+          <p>按常见设计场景整理，业务提交前先确认需要准备的资料和后续步骤。</p>
         </div>
       </div>
 
-      <section class="card">
-        <div class="admin-stat-grid" id="adminStats"></div>
-      </section>
-
-      <section class="card" style="margin-top:16px">
-        <h2 style="margin:0 0 6px">设计师名称设置</h2>
-        <p class="desc">测试或正式使用时可改成真实设计师姓名。</p>
-        <div class="grid-2" style="margin-top:14px">
-          <div class="input-row" style="margin:0"><label>设计师 1</label><input id="designerNameA" /></div>
-          <div class="input-row" style="margin:0"><label>设计师 2</label><input id="designerNameB" /></div>
-        </div>
-        <button class="btn-main" style="margin-top:14px" id="saveNamesBtn">保存名称</button>
-      </section>
-
-      <section id="adminDesignerPanels"></section>
-
-      <section class="card" style="margin-top:16px">
-        <div class="admin-designer-head" style="margin-bottom:8px">
-          <div>
-            <h2 style="margin:0 0 8px">本月统计</h2>
-            <p class="desc">红框部分可手动填写；完成率会根据“已完成 ÷ 本月接单”自动计算。</p>
+      <div class="flow-clean-grid">
+        <article class="flow-card">
+          <div class="flow-card-title">做 3D</div>
+          <div class="flow-steps">
+            <div class="flow-step"><b>1</b><span>提供客户名、尺寸、盒型</span></div>
+            <div class="flow-step"><b>2</b><span>等待设计交付</span></div>
           </div>
-          <button class="btn-main" id="saveMonthStatsBtn">保存本月统计</button>
-        </div>
-        <div id="monthStats" style="margin-top:14px"></div>
-      </section>
+        </article>
+
+        <article class="flow-card">
+          <div class="flow-card-title">做设计平面图</div>
+          <div class="flow-steps">
+            <div class="flow-step"><b>1</b><span>提供客户名、尺寸、盒型、客户要求</span></div>
+            <div class="flow-step"><b>2</b><span>等待设计交付平面图</span></div>
+            <div class="flow-step"><b>3</b><span>客户确认平面图</span></div>
+            <div class="flow-step"><b>4</b><span>设计制作终版文件（打样）</span></div>
+          </div>
+        </article>
+
+        <article class="flow-card wide">
+          <div class="flow-card-title">客户有详细文件和设计</div>
+          <div class="flow-split">
+            <div class="flow-sub">
+              <strong>客户要修改设计</strong>
+              <div class="flow-steps">
+                <div class="flow-step"><b>1</b><span>提供客户名、客户要求</span></div>
+                <div class="flow-step"><b>2</b><span>等待设计交付平面图</span></div>
+                <div class="flow-step"><b>3</b><span>客户确认平面图</span></div>
+                <div class="flow-step"><b>4</b><span>设计制作终版文件（打样）</span></div>
+              </div>
+            </div>
+            <div class="flow-sub">
+              <strong>客户不要修改，直接做样品</strong>
+              <div class="flow-steps">
+                <div class="flow-step"><b>1</b><span>提供客户名、客户文件</span></div>
+                <div class="flow-step"><b>2</b><span>等待设计交付终版平面图</span></div>
+                <div class="flow-step"><b>3</b><span>客户确认平面图</span></div>
+                <div class="flow-step"><b>4</b><span>设计制作终版文件（打样）</span></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="flow-card">
+          <div class="flow-card-title">客户要 PDF 文件确认设计详情</div>
+          <div class="flow-steps">
+            <div class="flow-step"><b>1</b><span>设计出平面图</span></div>
+            <div class="flow-step"><b>2</b><span>客户确认</span></div>
+            <div class="flow-step"><b>3</b><span>设计出待确定 PDF</span></div>
+            <div class="flow-step"><b>4</b><span>确认后出终版文件；如需修改则回到平面图确认</span></div>
+          </div>
+        </article>
+
+        <article class="flow-card">
+          <div class="flow-card-title">客户在假期需要 PDF 文件确定</div>
+          <div class="flow-steps">
+            <div class="flow-step"><b>1</b><span>在工作日和设计说明情况下，方便设计保存文件</span></div>
+            <div class="flow-step"><b>2</b><span>设计出平面图</span></div>
+            <div class="flow-step"><b>3</b><span>客户确认后出终版文件（打样）</span></div>
+            <div class="flow-step"><b>4</b><span>客户要 PDF 确认时，参考“PDF 文件确认设计详情”流程</span></div>
+          </div>
+        </article>
+      </div>
     </section>
-  </main>
+</main>
 
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./src/config.js"></script>
   <script src="./src/app.js"></script>
-  <script>window.MeteorApp.startAdmin();</script>
+  <script>window.MeteorApp.startUser();</script>
 </body>
 </html>

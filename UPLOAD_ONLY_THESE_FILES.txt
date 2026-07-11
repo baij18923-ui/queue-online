@@ -1,0 +1,16 @@
+修复说明：
+
+用户端：首页 / 或 /index.html
+管理端：/admin.html 或 /admin
+
+本次不需要重新运行 Supabase SQL。
+
+上传 GitHub 时，仓库根目录必须直接看到：
+index.html
+admin.html
+netlify.toml
+_redirects
+src
+supabase
+
+不要把外层 meteor-design-queue-online-route-fixed 文件夹作为第二层上传。
