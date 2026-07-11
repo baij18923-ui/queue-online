@@ -3,146 +3,70 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Meteor Design Queue | 流星设计排队系统</title>
+  <title>管理端 | Meteor Design Queue</title>
   <link rel="stylesheet" href="./src/styles.css" />
 </head>
 <body>
   <main class="page">
-    <section class="hero">
-      <div>
-        <h1>设计师工作量看板</h1>
+    <section id="loginBox" class="card login-card">
+      <h1 style="margin:0 0 8px">管理端登录</h1>
+      <p class="desc">密码输入框隐藏显示，不会明文展示。</p>
+      <div class="input-row">
+        <label for="passwordInput">管理密码</label>
+        <input id="passwordInput" type="password" autocomplete="current-password" placeholder="请输入管理密码" />
       </div>
-      <div class="hero-total">
+      <button class="btn-main" style="width:100%; margin-top:16px" id="loginBtn">登录</button>
+      <p id="loginMsg" class="small"></p>
+    </section>
+
+    <section id="adminPanel" style="display:none">
+      <div class="admin-top">
         <div>
-          <strong id="activeTotal">0</strong>
-          <span>当前总设计数量</span>
+          <h1 style="margin:0 0 8px">设计叫号管理</h1>
+          <p class="desc">每个设计师可独立叫号、完成、作废、暂停接单或恢复接单。</p>
+        </div>
+        <div class="admin-actions">
+          <button class="btn-muted" id="refreshBtn">刷新</button>
+          <button class="btn-warn" id="resetNumberBtn">重置今日号码</button>
+          <button class="btn-danger" id="clearTodayBtn">清空今日测试数据</button>
+          <button class="btn-muted" id="logoutBtn">退出</button>
         </div>
       </div>
-    </section>
 
-    <section class="grid-2 cards" id="designerCards">
-      <div class="loading">正在加载设计师工作量...</div>
-    </section>
+      <section class="card">
+        <div class="admin-stat-grid" id="adminStats"></div>
+      </section>
 
-    <section class="card flow-mini-section">
-      <div class="flow-mini-header">
-        <h2>设计流程</h2>
-        <p>按不同设计需求查看需要准备的资料和确认步骤。</p>
-      </div>
+      <section class="card" style="margin-top:16px">
+        <h2 style="margin:0 0 6px">设计师名称设置</h2>
+        <p class="desc">测试或正式使用时可改成真实设计师姓名。</p>
+        <div class="grid-2" style="margin-top:14px">
+          <div class="input-row" style="margin:0"><label>设计师 1</label><input id="designerNameA" /></div>
+          <div class="input-row" style="margin:0"><label>设计师 2</label><input id="designerNameB" /></div>
+        </div>
+        <button class="btn-main" style="margin-top:14px" id="saveNamesBtn">保存名称</button>
+      </section>
 
-      <div class="flow-mini-scroll">
-        <div class="flow-mini-map">
-          <div class="flow-mini-root">设计流程</div>
+      <section id="adminDesignerPanels"></section>
 
-          <div class="flow-mini-lines">
-            <article class="flow-mini-item">
-              <div class="flow-mini-title">做3D</div>
-              <div class="flow-mini-row">
-                <span>提供：客户名、尺寸、盒型</span>
-                <i></i>
-                <span>等待设计交付</span>
-              </div>
-            </article>
-
-            <article class="flow-mini-item">
-              <div class="flow-mini-title">做设计平面图</div>
-              <div class="flow-mini-row">
-                <span>提供：客户名、尺寸、盒型、客户要求</span>
-                <i></i>
-                <span>等待设计交付平面图</span>
-                <i></i>
-                <span>客户确认平面图</span>
-                <i></i>
-                <span>设计制作终版文件（打样）</span>
-              </div>
-            </article>
-
-            <article class="flow-mini-item">
-              <div class="flow-mini-title">客户有详细文件和设计</div>
-              <div class="flow-mini-branches">
-                <div class="flow-mini-branch">
-                  <strong>客户要修改设计</strong>
-                  <div class="flow-mini-row">
-                    <span>提供：客户名、客户要求</span>
-                    <i></i>
-                    <span>等待设计交付平面图</span>
-                    <i></i>
-                    <span>客户确认平面图</span>
-                    <i></i>
-                    <span>设计制作终版文件（打样）</span>
-                  </div>
-                </div>
-                <div class="flow-mini-branch">
-                  <strong>客户不要修改，直接做样品</strong>
-                  <div class="flow-mini-row">
-                    <span>提供：客户名、客户文件</span>
-                    <i></i>
-                    <span>等待设计交付终版平面图</span>
-                    <i></i>
-                    <span>客户确认平面图</span>
-                    <i></i>
-                    <span>设计制作终版文件（打样）</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article class="flow-mini-item">
-              <div class="flow-mini-title">客户要 PDF 文件确认设计详情</div>
-              <div class="flow-mini-row">
-                <span>设计出平面图</span>
-                <i></i>
-                <span>客户确认</span>
-                <i></i>
-                <span>设计出待确定 PDF</span>
-              </div>
-              <div class="flow-mini-branches two">
-                <div class="flow-mini-branch">
-                  <strong>客户确认 PDF 设计</strong>
-                  <div class="flow-mini-row"><span>设计出终版文件（打样）</span></div>
-                </div>
-                <div class="flow-mini-branch">
-                  <strong>要修改</strong>
-                  <div class="flow-mini-row">
-                    <span>设计出平面图</span>
-                    <i></i>
-                    <span>客户确认</span>
-                    <i></i>
-                    <span>设计出终版文件（打样）</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article class="flow-mini-item">
-              <div class="flow-mini-title">客户在假期需要 PDF 文件确定</div>
-              <div class="flow-mini-row">
-                <span>在工作日和设计说明情况下，方便设计保存文件</span>
-                <i></i>
-                <span>设计出平面图</span>
-              </div>
-              <div class="flow-mini-branches two">
-                <div class="flow-mini-branch">
-                  <strong>客户确认</strong>
-                  <div class="flow-mini-row"><span>设计出终版文件（打样）</span></div>
-                </div>
-                <div class="flow-mini-branch">
-                  <strong>客户要 PDF 确认</strong>
-                  <div class="flow-mini-row"><span>参考第四条流程</span></div>
-                </div>
-              </div>
-            </article>
+      <section class="card" style="margin-top:16px">
+        <div class="admin-designer-head" style="margin-bottom:8px">
+          <div>
+            <h2 style="margin:0 0 8px">本月统计</h2>
+            <p class="desc">红框部分可手动填写；完成率会根据“已完成 ÷ 本月接单”自动计算。</p>
           </div>
+          <button class="btn-main" id="saveMonthStatsBtn">保存本月统计</button>
         </div>
-      </div>
+        <div id="monthStats" style="margin-top:14px"></div>
+      </section>
     </section>
-</main>
+  </main>
 
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./src/config.js"></script>
   <script src="./src/app.js"></script>
-  <script>window.MeteorApp.startUser();</script>
+  <script>window.MeteorApp.startAdmin();</script>
 </body>
 </html>

@@ -1,46 +1,91 @@
-# Meteor Design Queue
+# 覆盖部署步骤
 
-流星设计排队系统 V2 在线版。
+当前可以保持原网址覆盖部署。
 
-## 页面
+只要 Netlify 还是连接原来的 GitHub 仓库，更新 GitHub 后 Netlify 会自动重新发布，网址不变。
 
-- 用户端：`/`
-- 管理端：`/admin.html`
+## 第一步：运行 Supabase SQL
 
-## 主要功能
+1. 打开 Supabase。
+2. 进入之前的项目。
+3. 打开 SQL Editor。
+4. 新建 Query。
+5. 打开本项目的 `supabase/schema.sql`。
+6. 全部复制进去。
+7. 点 Run。
+8. 出现危险提示时点运行查询。
+9. 看到 Success 就成功。
 
-- 用户端显示设计师当前待处理数量。
-- 用户端选择设计师取号。
-- 后台可以叫下一个、完成、作废、改回等待、转单。
-- 后台支持暂停接单 / 恢复接单。
-- 暂停接单后，用户端显示暂停接单，并禁用该设计师取号按钮。
-- 本月接单只在后台显示。
-- 本月统计支持后台手动填写。
-- 完成率自动计算：`已完成 ÷ 本月接单`。
-- Supabase 实时同步。
+这一步会新增/更新这些表：
 
-## 本次新增
+```text
+meteor_settings
+meteor_designers
+meteor_design_tickets
+meteor_logs
+meteor_month_manual_stats
+```
 
-后台“本月统计”表格里这些数据可以手动填写：
+`meteor_month_manual_stats` 是本次新增的手动本月统计表。
 
-- 本月接单
-- 等待中
-- 制作中
-- 已完成
-- 已作废
+## 第二步：上传 GitHub 覆盖旧仓库
 
-填写后点击“保存本月统计”。
+1. 打开 GitHub 旧仓库。
+2. 确认这个仓库就是 Netlify 当前连接的仓库。
+3. 删除旧文件，或者直接上传覆盖。
+4. 上传本项目文件夹里面的内容，不要上传外层文件夹。
 
-完成率不需要填写，系统会根据“已完成 ÷ 本月接单”自动计算。
+GitHub 根目录应该直接看到：
 
-## 部署
+```text
+index.html
+admin.html
+src
+supabase
+README.md
+DEPLOY_STEPS.md
+```
 
-1. 在 Supabase SQL Editor 运行 `supabase/schema.sql`。
-2. 检查 `src/config.js` 里的 Supabase URL 和 Publishable key。
-3. 上传本项目所有文件到当前 GitHub 仓库根目录。
-4. Netlify 会自动覆盖部署，原网址不变。
+不要变成：
 
+```text
+meteor-design-queue-online/index.html
+```
 
-## 新增
+## 第三步：等待 Netlify 自动部署
 
-- 用户端新增“设计流程”说明区，内容来自你提供的流程图。
+GitHub 提交后，Netlify 会自动部署。
+
+部署成功后，原网址保持不变：
+
+```text
+用户端：https://curious-kheer-27c89e.netlify.app/
+管理端：https://curious-kheer-27c89e.netlify.app/admin.html
+```
+
+管理密码默认：
+
+```text
+123456
+```
+
+## 测试闭环
+
+1. 打开用户端。
+2. 选择设计A取号。
+3. 打开管理端。
+4. 登录。
+5. 查看设计A等待中出现号码。
+6. 点设计A的叫下一个。
+7. 号码变成制作中。
+8. 点完成。
+9. 用户端设计A当前待处理数量减少 1。
+10. 后台点设计A暂停接单。
+11. 用户端设计A显示暂停接单，取号按钮禁用。
+12. 后台点恢复接单。
+13. 用户端设计A恢复可取号。
+14. 后台进入本月统计。
+15. 手动填写本月接单、等待中、制作中、已完成、已作废。
+16. 完成率自动变化。
+17. 点击保存本月统计。
+18. 刷新后台，确认手动填写的数据仍然保留。
