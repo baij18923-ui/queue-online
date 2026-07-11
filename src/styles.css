@@ -157,3 +157,17 @@ button:disabled { cursor: not-allowed; opacity: .48; transform: none; }
   .ticket { grid-template-columns: 1fr; }
   .ticket-actions { justify-content: flex-start; }
 }
+.month-input {
+  width: 84px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  outline: none;
+  background: #fff;
+  color: var(--text);
+  font-weight: 700;
+}
+.month-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(45, 149, 95, .12);
+}

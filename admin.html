@@ -50,8 +50,13 @@
       <section id="adminDesignerPanels"></section>
 
       <section class="card" style="margin-top:16px">
-        <h2 style="margin:0 0 8px">本月统计</h2>
-        <p class="desc">本月接单只在后台显示。新月份会自动重新计算，不删除历史。</p>
+        <div class="admin-designer-head" style="margin-bottom:8px">
+          <div>
+            <h2 style="margin:0 0 8px">本月统计</h2>
+            <p class="desc">红框部分可手动填写；完成率会根据“已完成 ÷ 本月接单”自动计算。</p>
+          </div>
+          <button class="btn-main" id="saveMonthStatsBtn">保存本月统计</button>
+        </div>
         <div id="monthStats" style="margin-top:14px"></div>
       </section>
     </section>

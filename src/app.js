@@ -15,6 +15,7 @@
   let appMode = 'user';
   let designers = [];
   let tickets = [];
+  let manualMonthStats = [];
   let channel = null;
 
   function requireConfig() {
@@ -88,14 +89,21 @@
 
   async function loadData() {
     if (!client) return;
-    const [{ data: designerData, error: designerError }, { data: ticketData, error: ticketError }] = await Promise.all([
+    const [
+      { data: designerData, error: designerError },
+      { data: ticketData, error: ticketError },
+      { data: monthStatsData, error: monthStatsError }
+    ] = await Promise.all([
       client.from('meteor_designers').select('*').order('sort_order'),
-      client.from('meteor_design_tickets').select('*').order('created_at', { ascending: true }).limit(1000)
+      client.from('meteor_design_tickets').select('*').order('created_at', { ascending: true }).limit(1000),
+      client.from('meteor_month_manual_stats').select('*').eq('month_key', monthKey())
     ]);
     if (designerError) throw designerError;
     if (ticketError) throw ticketError;
+    if (monthStatsError) throw monthStatsError;
     designers = designerData || [];
     tickets = ticketData || [];
+    manualMonthStats = monthStatsData || [];
     render();
   }
 
@@ -106,6 +114,7 @@
       .channel('meteor-design-queue-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'meteor_designers' }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'meteor_design_tickets' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meteor_month_manual_stats' }, loadData)
       .subscribe();
   }
 
@@ -163,6 +172,44 @@
     const b = document.getElementById('designerNameB').value.trim() || '设计B';
     await rpc('meteor_update_designer_names', { p_name_a: a, p_name_b: b });
     showToast('设计师名称已保存');
+  }
+
+
+  async function saveManualMonthStats() {
+    const rows = Array.from(document.querySelectorAll('[data-month-row]'));
+    if (!rows.length) return;
+
+    for (const row of rows) {
+      const designerId = row.dataset.monthRow;
+      const value = field => Number(row.querySelector(`[data-month-field="${field}"]`)?.value || 0);
+      await rpc('meteor_upsert_month_stats', {
+        p_designer_id: designerId,
+        p_month_key: monthKey(),
+        p_total: value('total'),
+        p_waiting: value('waiting'),
+        p_in_progress: value('in_progress'),
+        p_done: value('done'),
+        p_cancelled: value('cancelled')
+      });
+    }
+
+    showToast('本月统计已保存，完成率已自动计算');
+  }
+
+  function getManualMonthStat(designerId) {
+    const saved = manualMonthStats.find(item => item.designer_id === designerId && item.month_key === monthKey());
+    if (saved) {
+      const total = Number(saved.total_count || 0);
+      const waiting = Number(saved.waiting_count || 0);
+      const inProgress = Number(saved.in_progress_count || 0);
+      const done = Number(saved.done_count || 0);
+      const cancelled = Number(saved.cancelled_count || 0);
+      const percent = total ? Math.round(done / total * 100) : 0;
+      return { total, waiting, inProgress, done, cancelled, percent, manual: true };
+    }
+
+    const auto = calcStats(designerTickets(designerId, 'month'));
+    return { ...auto, manual: false };
   }
 
   function render() {
@@ -317,10 +364,28 @@
     const el = document.getElementById('monthStats');
     if (!el) return;
     const rows = designers.map(d => {
-      const s = calcStats(designerTickets(d.id, 'month'));
-      return `<tr><td><strong>${d.name}</strong></td><td>${s.total}</td><td>${s.waiting}</td><td>${s.inProgress}</td><td>${s.done}</td><td>${s.cancelled}</td><td>${s.percent}%</td></tr>`;
+      const s = getManualMonthStat(d.id);
+      return `<tr data-month-row="${d.id}">
+        <td><strong>${d.name}</strong></td>
+        <td><input class="month-input" type="number" min="0" data-month-field="total" value="${s.total}"></td>
+        <td><input class="month-input" type="number" min="0" data-month-field="waiting" value="${s.waiting}"></td>
+        <td><input class="month-input" type="number" min="0" data-month-field="in_progress" value="${s.inProgress}"></td>
+        <td><input class="month-input" type="number" min="0" data-month-field="done" value="${s.done}"></td>
+        <td><input class="month-input" type="number" min="0" data-month-field="cancelled" value="${s.cancelled}"></td>
+        <td><strong data-month-rate>${s.percent}%</strong></td>
+      </tr>`;
     }).join('');
     el.innerHTML = `<table class="table"><thead><tr><th>设计师</th><th>本月接单</th><th>等待中</th><th>制作中</th><th>已完成</th><th>已作废</th><th>完成率</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+    el.querySelectorAll('.month-input').forEach(input => {
+      input.addEventListener('input', () => {
+        const row = input.closest('[data-month-row]');
+        const total = Number(row.querySelector('[data-month-field="total"]').value || 0);
+        const done = Number(row.querySelector('[data-month-field="done"]').value || 0);
+        const rate = total ? Math.round(done / total * 100) : 0;
+        row.querySelector('[data-month-rate]').textContent = `${rate}%`;
+      });
+    });
   }
 
   function bindAdminEvents() {
@@ -347,6 +412,7 @@
     document.getElementById('resetNumberBtn')?.addEventListener('click', resetNumber);
     document.getElementById('clearTodayBtn')?.addEventListener('click', clearToday);
     document.getElementById('saveNamesBtn')?.addEventListener('click', saveNames);
+    document.getElementById('saveMonthStatsBtn')?.addEventListener('click', saveManualMonthStats);
   }
 
   function showToast(text) {

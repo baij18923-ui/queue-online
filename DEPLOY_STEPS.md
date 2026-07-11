@@ -2,12 +2,6 @@
 
 当前可以保持原网址覆盖部署。
 
-你的原网址类似：
-
-```text
-https://curious-kheer-27c89e.netlify.app/
-```
-
 只要 Netlify 还是连接原来的 GitHub 仓库，更新 GitHub 后 Netlify 会自动重新发布，网址不变。
 
 ## 第一步：运行 Supabase SQL
@@ -22,16 +16,17 @@ https://curious-kheer-27c89e.netlify.app/
 8. 出现危险提示时点运行查询。
 9. 看到 Success 就成功。
 
-这一步会创建新版表：
+这一步会新增/更新这些表：
 
 ```text
 meteor_settings
 meteor_designers
 meteor_design_tickets
 meteor_logs
+meteor_month_manual_stats
 ```
 
-不会删除你旧版表。
+`meteor_month_manual_stats` 是本次新增的手动本月统计表。
 
 ## 第二步：上传 GitHub 覆盖旧仓库
 
@@ -82,10 +77,15 @@ GitHub 提交后，Netlify 会自动部署。
 4. 登录。
 5. 查看设计A等待中出现号码。
 6. 点设计A的叫下一个。
-7. 用户端设计A当前待处理数量不变，但后台状态从等待中变制作中。
-8. 管理端点完成。
+7. 号码变成制作中。
+8. 点完成。
 9. 用户端设计A当前待处理数量减少 1。
-10. 管理端点暂停接单。
+10. 后台点设计A暂停接单。
 11. 用户端设计A显示暂停接单，取号按钮禁用。
-12. 管理端点恢复接单。
+12. 后台点恢复接单。
 13. 用户端设计A恢复可取号。
+14. 后台进入本月统计。
+15. 手动填写本月接单、等待中、制作中、已完成、已作废。
+16. 完成率自动变化。
+17. 点击保存本月统计。
+18. 刷新后台，确认手动填写的数据仍然保留。

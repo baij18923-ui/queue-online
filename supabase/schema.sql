@@ -42,6 +42,20 @@ create table if not exists public.meteor_logs (
   created_at timestamptz not null default now()
 );
 
+
+create table if not exists public.meteor_month_manual_stats (
+  id uuid primary key default gen_random_uuid(),
+  month_key text not null,
+  designer_id text not null references public.meteor_designers(id),
+  total_count integer not null default 0 check (total_count >= 0),
+  waiting_count integer not null default 0 check (waiting_count >= 0),
+  in_progress_count integer not null default 0 check (in_progress_count >= 0),
+  done_count integer not null default 0 check (done_count >= 0),
+  cancelled_count integer not null default 0 check (cancelled_count >= 0),
+  updated_at timestamptz not null default now(),
+  unique (month_key, designer_id)
+);
+
 insert into public.meteor_settings (id)
 values (1)
 on conflict (id) do nothing;
@@ -284,6 +298,68 @@ begin
 end;
 $$;
 
+create or replace function public.meteor_upsert_month_stats(
+  p_month_key text,
+  p_designer_id text,
+  p_total integer,
+  p_waiting integer,
+  p_in_progress integer,
+  p_done integer,
+  p_cancelled integer
+)
+returns public.meteor_month_manual_stats
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  d public.meteor_designers%rowtype;
+  s public.meteor_month_manual_stats%rowtype;
+begin
+  select * into d
+  from public.meteor_designers
+  where id = p_designer_id;
+
+  if d.id is null then
+    raise exception '设计师不存在。';
+  end if;
+
+  insert into public.meteor_month_manual_stats (
+    month_key,
+    designer_id,
+    total_count,
+    waiting_count,
+    in_progress_count,
+    done_count,
+    cancelled_count,
+    updated_at
+  )
+  values (
+    coalesce(nullif(trim(p_month_key), ''), public.meteor_month_key()),
+    p_designer_id,
+    greatest(coalesce(p_total, 0), 0),
+    greatest(coalesce(p_waiting, 0), 0),
+    greatest(coalesce(p_in_progress, 0), 0),
+    greatest(coalesce(p_done, 0), 0),
+    greatest(coalesce(p_cancelled, 0), 0),
+    now()
+  )
+  on conflict (month_key, designer_id) do update
+  set total_count = excluded.total_count,
+      waiting_count = excluded.waiting_count,
+      in_progress_count = excluded.in_progress_count,
+      done_count = excluded.done_count,
+      cancelled_count = excluded.cancelled_count,
+      updated_at = now()
+  returning * into s;
+
+  insert into public.meteor_logs (action, detail)
+  values ('手动保存本月统计', s.month_key || ' - ' || d.name);
+
+  return s;
+end;
+$$;
+
 create or replace function public.meteor_reset_today_number()
 returns void
 language plpgsql
@@ -327,11 +403,13 @@ alter table public.meteor_settings enable row level security;
 alter table public.meteor_designers enable row level security;
 alter table public.meteor_design_tickets enable row level security;
 alter table public.meteor_logs enable row level security;
+alter table public.meteor_month_manual_stats enable row level security;
 
 drop policy if exists "meteor_settings_public_access" on public.meteor_settings;
 drop policy if exists "meteor_designers_public_access" on public.meteor_designers;
 drop policy if exists "meteor_design_tickets_public_access" on public.meteor_design_tickets;
 drop policy if exists "meteor_logs_public_access" on public.meteor_logs;
+drop policy if exists "meteor_month_manual_stats_public_access" on public.meteor_month_manual_stats;
 
 create policy "meteor_settings_public_access"
 on public.meteor_settings
@@ -357,11 +435,19 @@ for all
 using (true)
 with check (true);
 
+
+create policy "meteor_month_manual_stats_public_access"
+on public.meteor_month_manual_stats
+for all
+using (true)
+with check (true);
+
 grant usage on schema public to anon;
 grant select, insert, update, delete on public.meteor_settings to anon;
 grant select, insert, update, delete on public.meteor_designers to anon;
 grant select, insert, update, delete on public.meteor_design_tickets to anon;
 grant select, insert, update, delete on public.meteor_logs to anon;
+grant select, insert, update, delete on public.meteor_month_manual_stats to anon;
 
 grant execute on function public.meteor_today_key() to anon;
 grant execute on function public.meteor_month_key() to anon;
@@ -371,6 +457,7 @@ grant execute on function public.meteor_update_ticket_status(uuid, text) to anon
 grant execute on function public.meteor_transfer_ticket(uuid, text) to anon;
 grant execute on function public.meteor_set_designer_accepting(text, boolean) to anon;
 grant execute on function public.meteor_update_designer_names(text, text) to anon;
+grant execute on function public.meteor_upsert_month_stats(text, text, integer, integer, integer, integer, integer) to anon;
 grant execute on function public.meteor_reset_today_number() to anon;
 grant execute on function public.meteor_clear_today_data() to anon;
 
@@ -385,6 +472,15 @@ $$;
 do $$
 begin
   alter publication supabase_realtime add table public.meteor_design_tickets;
+exception
+  when duplicate_object then null;
+end;
+$$;
+
+
+do $$
+begin
+  alter publication supabase_realtime add table public.meteor_month_manual_stats;
 exception
   when duplicate_object then null;
 end;
