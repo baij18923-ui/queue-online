@@ -1,16 +1,22 @@
-修复说明：
+本次是在你上传的正式版代码上修改，没有取消原功能。
 
-用户端：首页 / 或 /index.html
-管理端：/admin.html 或 /admin
+保留内容：
+- 用户端完整设计流程
+- 管理端今日统计
+- 设计师自定义名称
+- 本月统计
+- 完成、作废、转单、改回等待、暂停接单
 
-本次不需要重新运行 Supabase SQL。
+新增内容：
+- 用户本人号码状态变化时，右下角通知栏显示 5 秒后自动消失
+- 通知不需要点击确认
+- 工作音乐快捷入口：网易云音乐、QQ音乐
 
-上传 GitHub 时，仓库根目录必须直接看到：
+本次不需要运行 Supabase SQL。
+
+只需要上传覆盖这 3 个文件：
 index.html
-admin.html
-netlify.toml
-_redirects
-src
-supabase
+src/app.js
+src/styles.css
 
-不要把外层 meteor-design-queue-online-route-fixed 文件夹作为第二层上传。
+也可以把整个项目内容覆盖上传。

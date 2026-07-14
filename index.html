@@ -24,6 +24,12 @@
       <div class="loading">正在加载设计师工作量...</div>
     </section>
 
+    <section class="card music-strip" aria-label="工作音乐快捷入口">
+      <a class="music-strip-link music-strip-left" href="https://music.163.com/">网易云音乐</a>
+      <div class="music-strip-divider" aria-hidden="true">/</div>
+      <a class="music-strip-link music-strip-right" href="https://y.qq.com/">QQ音乐</a>
+    </section>
+
     <section class="card flow-clean-section">
       <div class="flow-clean-header">
         <div>
@@ -98,7 +104,7 @@
     </section>
 </main>
 
-  <div id="toast" class="toast"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./src/config.js"></script>

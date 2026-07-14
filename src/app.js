@@ -10,6 +10,8 @@
     cancelled: '已作废'
   };
   const ADMIN_SESSION_KEY = 'meteor_design_queue_admin_authed';
+  const OWNED_TICKETS_KEY = 'meteor_design_queue_owned_tickets';
+  const TOAST_DURATION = 5000;
 
   let client = null;
   let appMode = 'user';
@@ -17,6 +19,10 @@
   let tickets = [];
   let manualMonthStats = [];
   let channel = null;
+  let toastQueue = [];
+  let toastBusy = false;
+  let audioContext = null;
+  let audioReady = false;
 
   function requireConfig() {
     if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
@@ -80,6 +86,145 @@
     return designers.find(d => d.id === id) || designers[0];
   }
 
+
+  function getOwnedTicketStates() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(OWNED_TICKETS_KEY) || '[]');
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(item => {
+        if (typeof item === 'string') return { id: item, status: null, designer_id: null, number: '' };
+        return item && item.id ? item : null;
+      }).filter(Boolean);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function saveOwnedTicketStates(states) {
+    try {
+      localStorage.setItem(OWNED_TICKETS_KEY, JSON.stringify(states.slice(-100)));
+    } catch (error) {
+      console.warn('保存用户号码失败', error);
+    }
+  }
+
+  function rememberOwnedTicket(ticket) {
+    if (!ticket || !ticket.id) return;
+    const states = getOwnedTicketStates();
+    const next = states.filter(item => item.id !== ticket.id);
+    next.push({
+      id: ticket.id,
+      status: ticket.status || 'waiting',
+      designer_id: ticket.designer_id || null,
+      number: ticket.number || ''
+    });
+    saveOwnedTicketStates(next);
+  }
+
+  function normalizeRpcTicket(data) {
+    if (Array.isArray(data)) return data[0] || null;
+    return data || null;
+  }
+
+  function getAudioContext() {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      if (!audioContext) {
+        audioContext = new AudioContextClass({ latencyHint: 'interactive' });
+      }
+      return audioContext;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function unlockAudio() {
+    const audio = getAudioContext();
+    if (!audio) return;
+
+    const resumePromise = audio.state === 'suspended' ? audio.resume() : Promise.resolve();
+    resumePromise.then(() => {
+      if (audioReady) return;
+      const buffer = audio.createBuffer(1, 1, 22050);
+      const source = audio.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audio.destination);
+      source.start(0);
+      source.stop(0);
+      audioReady = true;
+    }).catch(() => {
+      // 某些浏览器需要用户继续点击后才能真正解锁声音。
+    });
+  }
+
+  function installAudioUnlock() {
+    ['pointerdown', 'touchstart', 'keydown'].forEach(eventName => {
+      document.addEventListener(eventName, unlockAudio, { passive: true });
+    });
+  }
+
+  function playNoticeSound() {
+    try {
+      const audio = getAudioContext();
+      if (!audio) return;
+      if (audio.state === 'suspended') {
+        audio.resume().catch(() => {});
+      }
+      const now = audio.currentTime + 0.01;
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, now);
+      oscillator.connect(gain);
+      gain.connect(audio.destination);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+      oscillator.start(now);
+      oscillator.stop(now + 0.24);
+    } catch (error) {
+      // 浏览器可能在用户尚未点击页面时禁止声音，不影响通知栏。
+    }
+  }
+
+  function notifyOwnedTicketChanges(nextTickets) {
+    if (appMode !== 'user') return;
+    const states = getOwnedTicketStates();
+    if (!states.length) return;
+
+    const ticketMap = new Map(nextTickets.map(ticket => [ticket.id, ticket]));
+    const updatedStates = states.map(saved => {
+      const current = ticketMap.get(saved.id);
+      if (!current) return saved;
+
+      const designer = designers.find(item => item.id === current.designer_id);
+      const designerName = designer ? designer.name : '设计师';
+      const number = current.number || saved.number || '您的号码';
+
+      if (saved.designer_id && saved.designer_id !== current.designer_id) {
+        showToast(`${number} 已转单\n现负责设计师：${designerName}`, 'info', true);
+      } else if (saved.status && saved.status !== current.status) {
+        const messages = {
+          waiting: `${number} 已返回等待\n负责设计师：${designerName}`,
+          in_progress: `${number} 已开始制作\n负责设计师：${designerName}`,
+          done: `${number} 已完成\n请联系 ${designerName} 确认文件`,
+          cancelled: `${number} 已作废\n如有疑问，请联系 ${designerName}`
+        };
+        showToast(messages[current.status] || `${number} 状态已更新`, current.status === 'cancelled' ? 'danger' : 'success', true);
+      }
+
+      return {
+        id: current.id,
+        status: current.status,
+        designer_id: current.designer_id,
+        number: current.number
+      };
+    });
+
+    saveOwnedTicketStates(updatedStates);
+  }
+
   function statusForDesigner(designer, stats) {
     if (!designer.is_accepting) return { label: '暂停接单', cls: 'pause', desc: '该设计师暂时不接新任务，请选择另一位设计师。' };
     if (stats.active >= 6) return { label: '忙碌', cls: 'busy', desc: '当前任务较多，建议优先考虑另一位设计师。' };
@@ -104,6 +249,7 @@
     designers = designerData || [];
     tickets = ticketData || [];
     manualMonthStats = monthStatsData || [];
+    notifyOwnedTicketChanges(tickets);
     render();
   }
 
@@ -129,9 +275,11 @@
   }
 
   async function takeTicket(designerId) {
-    await rpc('meteor_take_ticket', { p_designer_id: designerId });
+    const result = await rpc('meteor_take_ticket', { p_designer_id: designerId });
+    const ticket = normalizeRpcTicket(result);
     const designer = getDesigner(designerId);
-    showToast(`取号成功，负责设计师：${designer.name}`);
+    if (ticket) rememberOwnedTicket(ticket);
+    showToast(`取号成功${ticket?.number ? `：${ticket.number}` : ''}\n负责设计师：${designer.name}`, 'success', true);
   }
 
   async function callNext(designerId) {
@@ -415,17 +563,34 @@
     document.getElementById('saveMonthStatsBtn')?.addEventListener('click', saveManualMonthStats);
   }
 
-  function showToast(text) {
+  function showToast(text, type = 'info', sound = false) {
+    toastQueue.push({ text, type, sound });
+    runToastQueue();
+  }
+
+  function runToastQueue() {
     const toast = document.getElementById('toast');
-    if (!toast) return;
-    toast.textContent = text;
+    if (!toast || toastBusy || !toastQueue.length) return;
+
+    toastBusy = true;
+    const item = toastQueue.shift();
+    toast.textContent = item.text;
+    toast.dataset.type = item.type;
     toast.classList.add('show');
-    clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => toast.classList.remove('show'), 1800);
+    if (item.sound) playNoticeSound();
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        toastBusy = false;
+        runToastQueue();
+      }, 220);
+    }, TOAST_DURATION);
   }
 
   async function start(mode) {
     appMode = mode;
+    installAudioUnlock();
     if (!requireConfig()) return;
     if (mode === 'admin') bindAdminEvents();
     try {
