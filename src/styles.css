@@ -515,54 +515,70 @@ button:disabled { cursor: not-allowed; opacity: .48; transform: none; }
   margin-top: 18px;
   padding: 0;
   display: grid;
-  grid-template-columns: 1fr 72px 1fr;
+  grid-template-columns: 1fr 92px 1fr;
   align-items: stretch;
   gap: 0;
   overflow: hidden;
-  background: linear-gradient(135deg, #23874f, #2d955f);
-  border-color: rgba(31, 119, 72, .25);
+  background: linear-gradient(135deg, #20834b 0%, #2d955f 52%, #218652 100%);
+  border: 1px solid rgba(31, 119, 72, .18);
+  box-shadow: 0 18px 42px rgba(31, 119, 72, .14);
 }
 .music-strip-link {
-  min-height: 72px;
+  position: relative;
+  min-height: 78px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   color: #fff;
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 900;
   letter-spacing: .5px;
-  transition: background .18s ease, transform .18s ease;
+  transition: background .18s ease, transform .18s ease, filter .18s ease;
+}
+.music-strip-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.music-strip-link:hover::after {
+  opacity: 1;
 }
 .music-strip-link:hover {
-  background: rgba(255,255,255,.08);
+  filter: brightness(1.04);
 }
 .music-strip-divider {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255,255,255,.96);
-  font-size: 38px;
+  color: rgba(255,255,255,.98);
+  font-size: 46px;
   font-weight: 900;
   user-select: none;
+  background: rgba(255,255,255,.04);
+  border-left: 1px solid rgba(255,255,255,.1);
+  border-right: 1px solid rgba(255,255,255,.1);
 }
 .music-strip-left {
-  border-right: 1px solid rgba(255,255,255,.12);
+  border-right: 1px solid rgba(255,255,255,.08);
 }
 .music-strip-right {
-  border-left: 1px solid rgba(255,255,255,.12);
+  border-left: 1px solid rgba(255,255,255,.08);
 }
 @media (max-width: 700px) {
   .music-strip {
-    grid-template-columns: 1fr 48px 1fr;
+    grid-template-columns: 1fr 54px 1fr;
   }
   .music-strip-link {
-    min-height: 60px;
-    font-size: 18px;
+    min-height: 62px;
+    font-size: 22px;
     padding: 0 10px;
   }
   .music-strip-divider {
-    font-size: 28px;
+    font-size: 30px;
   }
   .toast {
     right: 16px;

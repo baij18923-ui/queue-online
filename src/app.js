@@ -315,6 +315,13 @@
     showToast('今日测试数据已清空');
   }
 
+  async function clearAllData() {
+    if (!confirm('确定清空全部数据吗？会删除所有号码、本月统计和历史日志，并重置今日号码。')) return;
+    await rpc('meteor_clear_all_data');
+    localStorage.removeItem(OWNED_TICKETS_KEY);
+    showToast('全部数据已清空，可重新开始', 'success');
+  }
+
   async function saveNames() {
     const a = document.getElementById('designerNameA').value.trim() || '设计A';
     const b = document.getElementById('designerNameB').value.trim() || '设计B';
@@ -344,20 +351,43 @@
     showToast('本月统计已保存，完成率已自动计算');
   }
 
-  function getManualMonthStat(designerId) {
+  function getAutoMonthStat(designerId) {
+    return calcStats(designerTickets(designerId, 'month'));
+  }
+
+  function getMergedMonthStat(designerId) {
+    const auto = getAutoMonthStat(designerId);
     const saved = manualMonthStats.find(item => item.designer_id === designerId && item.month_key === monthKey());
-    if (saved) {
-      const total = Number(saved.total_count || 0);
-      const waiting = Number(saved.waiting_count || 0);
-      const inProgress = Number(saved.in_progress_count || 0);
-      const done = Number(saved.done_count || 0);
-      const cancelled = Number(saved.cancelled_count || 0);
-      const percent = total ? Math.round(done / total * 100) : 0;
-      return { total, waiting, inProgress, done, cancelled, percent, manual: true };
+    if (!saved) {
+      return { ...auto, manual: false };
     }
 
-    const auto = calcStats(designerTickets(designerId, 'month'));
-    return { ...auto, manual: false };
+    const base = {
+      total: Number(saved.total_count || 0),
+      waiting: Number(saved.waiting_count || 0),
+      inProgress: Number(saved.in_progress_count || 0),
+      done: Number(saved.done_count || 0),
+      cancelled: Number(saved.cancelled_count || 0)
+    };
+
+    const snapshot = {
+      total: Number(saved.auto_total_snapshot || 0),
+      waiting: Number(saved.auto_waiting_snapshot || 0),
+      inProgress: Number(saved.auto_in_progress_snapshot || 0),
+      done: Number(saved.auto_done_snapshot || 0),
+      cancelled: Number(saved.auto_cancelled_snapshot || 0)
+    };
+
+    const merged = {
+      total: Math.max(0, base.total + (auto.total - snapshot.total)),
+      waiting: Math.max(0, base.waiting + (auto.waiting - snapshot.waiting)),
+      inProgress: Math.max(0, base.inProgress + (auto.inProgress - snapshot.inProgress)),
+      done: Math.max(0, base.done + (auto.done - snapshot.done)),
+      cancelled: Math.max(0, base.cancelled + (auto.cancelled - snapshot.cancelled))
+    };
+
+    const percent = merged.total ? Math.round(merged.done / merged.total * 100) : 0;
+    return { ...merged, percent, manual: true };
   }
 
   function render() {
@@ -439,7 +469,7 @@
       panels.innerHTML = designers.map((designer, index) => {
         const dList = designerTickets(designer.id, 'today');
         const stats = calcStats(dList);
-        const monthStats = calcStats(designerTickets(designer.id, 'month'));
+        const monthStats = getMergedMonthStat(designer.id);
         const meta = statusForDesigner(designer, stats);
         const other = designers.find(d => d.id !== designer.id);
         const working = dList.filter(t => t.status === 'in_progress');
@@ -512,7 +542,7 @@
     const el = document.getElementById('monthStats');
     if (!el) return;
     const rows = designers.map(d => {
-      const s = getManualMonthStat(d.id);
+      const s = getMergedMonthStat(d.id);
       return `<tr data-month-row="${d.id}">
         <td><strong>${d.name}</strong></td>
         <td><input class="month-input" type="number" min="0" data-month-field="total" value="${s.total}"></td>
@@ -559,6 +589,7 @@
     document.getElementById('refreshBtn')?.addEventListener('click', loadData);
     document.getElementById('resetNumberBtn')?.addEventListener('click', resetNumber);
     document.getElementById('clearTodayBtn')?.addEventListener('click', clearToday);
+    document.getElementById('clearAllBtn')?.addEventListener('click', clearAllData);
     document.getElementById('saveNamesBtn')?.addEventListener('click', saveNames);
     document.getElementById('saveMonthStatsBtn')?.addEventListener('click', saveManualMonthStats);
   }
