@@ -1,0 +1,13 @@
+正式版 V3 部署顺序：
+
+1. 打开 Supabase -> SQL Editor。
+2. 打开 supabase/ONE_TIME_FIX_AND_CLEAR.sql，复制全部内容并运行。
+   这一步会修复清空按钮、修复本月统计，并立即把旧数据清零。
+3. 将本文件夹中的全部内容覆盖上传到 GitHub 仓库根目录。
+4. 等待 Netlify 自动部署成功。
+5. 打开网页按 Ctrl + F5 强制刷新。
+
+说明：
+- Supabase SQL 必须运行，否则“清空全部数据”仍可能出现 DELETE requires a WHERE clause。
+- 设计师名称 Chic_ / fish 会保留。
+- 号码、本月统计、等待中、制作中、完成、作废和日志会清零。

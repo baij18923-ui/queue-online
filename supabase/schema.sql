@@ -449,13 +449,20 @@ security definer
 set search_path = public
 as $$
 begin
-  delete from public.meteor_design_tickets;
-  delete from public.meteor_month_manual_stats;
-  delete from public.meteor_logs;
+  -- Supabase 项目启用安全更新时，DELETE/UPDATE 必须带 WHERE 条件。
+  delete from public.meteor_design_tickets
+  where id is not null;
+
+  delete from public.meteor_month_manual_stats
+  where id is not null;
+
+  delete from public.meteor_logs
+  where id is not null;
 
   update public.meteor_designers
   set is_accepting = true,
-      updated_at = now();
+      updated_at = now()
+  where id is not null;
 
   update public.meteor_settings
   set current_day = public.meteor_today_key(),
